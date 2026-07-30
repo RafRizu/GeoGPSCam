@@ -1,0 +1,40 @@
+name: geo_gps_cam
+description: "GeoGPS Camera - Capture photos with GPS watermarks"
+publish_to: 'none'
+
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # Camera
+  camera: ^0.11.0+2
+
+  # GPS & Location
+  geolocator: ^13.0.2
+  geocoding: ^3.0.0
+
+  # Image processing & watermark
+  image: ^4.2.0
+
+  # File & gallery saving
+  path_provider: ^2.1.4
+  gal: ^2.3.0
+  permission_handler: ^11.3.1
+
+  # UI
+  google_fonts: ^6.2.1
+  intl: ^0.19.0
+  cupertino_icons: ^1.0.8
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^4.0.0
+
+flutter:
+  uses-material-design: true
