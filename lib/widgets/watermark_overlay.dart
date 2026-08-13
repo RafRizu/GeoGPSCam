@@ -57,6 +57,32 @@ class WatermarkOverlay extends StatelessWidget {
           ),
           if (locationData != null) ...[
             const SizedBox(height: 6),
+            // District row (Kabupaten/Kota)
+            if (locationData!.district != null && locationData!.district!.isNotEmpty) ...[  
+              Row(
+                children: [
+                  const Icon(
+                    Icons.account_balance_rounded,
+                    color: Color(0xFF34D399),
+                    size: 13,
+                  ),
+                  const SizedBox(width: 4),
+                  Expanded(
+                    child: Text(
+                      locationData!.district!,
+                      style: GoogleFonts.inter(
+                        color: const Color(0xFF34D399),
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 4),
+            ],
             Row(
               children: [
                 const Icon(

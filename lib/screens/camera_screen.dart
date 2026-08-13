@@ -386,6 +386,31 @@ class _CameraScreenState extends State<CameraScreen>
                     ),
                   ],
                 ),
+                if (_locationData?.district != null && _locationData!.district!.isNotEmpty) ...[  
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      const Icon(
+                        Icons.account_balance_rounded,
+                        color: Color(0xFF34D399),
+                        size: 12,
+                      ),
+                      const SizedBox(width: 4),
+                      Expanded(
+                        child: Text(
+                          _locationData!.district!,
+                          style: GoogleFonts.inter(
+                            color: const Color(0xFF34D399),
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ],
             ),
     );

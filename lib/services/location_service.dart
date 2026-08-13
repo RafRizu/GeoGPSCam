@@ -28,8 +28,12 @@ class LocationService {
 
       // Reverse geocode
       String address = 'Lokasi tidak dikenal';
-      String? city;
       String? country;
+      String? province;
+      String? regency;
+      String? district;
+      String? subDistrict;
+      String? street;
 
       try {
         final placemarks = await placemarkFromCoordinates(
@@ -41,27 +45,40 @@ class LocationService {
           final place = placemarks.first;
           final parts = <String>[];
 
-          if (place.name != null && place.name!.isNotEmpty) {
+          if (place.street != null && place.street!.isNotEmpty) {
+            street = place.street;
+            parts.add(place.street!);
+          } else if (place.name != null && place.name!.isNotEmpty) {
+            street = place.name;
             parts.add(place.name!);
           }
-          if (place.street != null && place.street!.isNotEmpty &&
-              place.street != place.name) {
-            parts.add(place.street!);
-          }
+
           if (place.subLocality != null && place.subLocality!.isNotEmpty) {
+            subDistrict = place.subLocality;
             parts.add(place.subLocality!);
           }
+
           if (place.locality != null && place.locality!.isNotEmpty) {
+            district = place.locality;
             parts.add(place.locality!);
           }
-          if (place.administrativeArea != null &&
-              place.administrativeArea!.isNotEmpty) {
+
+          if (place.subAdministrativeArea != null && place.subAdministrativeArea!.isNotEmpty) {
+            regency = place.subAdministrativeArea;
+            parts.add(place.subAdministrativeArea!);
+          }
+
+          if (place.administrativeArea != null && place.administrativeArea!.isNotEmpty) {
+            province = place.administrativeArea;
             parts.add(place.administrativeArea!);
           }
 
+          if (place.country != null && place.country!.isNotEmpty) {
+            country = place.country;
+            parts.add(place.country!);
+          }
+
           address = parts.join(', ');
-          city = place.locality;
-          country = place.country;
         }
       } catch (e) {
         address = '${position.latitude.toStringAsFixed(4)}, ${position.longitude.toStringAsFixed(4)}';
@@ -71,8 +88,12 @@ class LocationService {
         latitude: position.latitude,
         longitude: position.longitude,
         address: address,
-        city: city,
         country: country,
+        province: province,
+        regency: regency,
+        district: district,
+        subDistrict: subDistrict,
+        street: street,
       );
     } catch (e) {
       return null;

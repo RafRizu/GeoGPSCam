@@ -2,15 +2,23 @@ class LocationDataModel {
   final double latitude;
   final double longitude;
   final String address;
-  final String? city;
-  final String? country;
+  final String? country; // Negara
+  final String? province; // Provinsi (administrativeArea)
+  final String? regency; // Kabupaten/Kota (subAdministrativeArea)
+  final String? district; // Kecamatan (locality)
+  final String? subDistrict; // Desa/Kelurahan (subLocality)
+  final String? street; // Jalan/Blok (thoroughfare / subThoroughfare / street / name)
 
   const LocationDataModel({
     required this.latitude,
     required this.longitude,
     required this.address,
-    this.city,
     this.country,
+    this.province,
+    this.regency,
+    this.district,
+    this.subDistrict,
+    this.street,
   });
 
   String get coordinatesString =>

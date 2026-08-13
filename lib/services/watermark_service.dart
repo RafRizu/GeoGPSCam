@@ -83,11 +83,46 @@ class WatermarkService {
     final String lngStr = locationData != null
         ? 'LNG: ${locationData.longitude.toStringAsFixed(6)}°'
         : 'LNG: --';
-    final String addressStr = locationData?.address ?? 'Lokasi GPS tidak tersedia';
+
+    // Format hierarki lokasi (3 item pertama di baris 1 menyamping, item ke-4 dst di baris 2 menyamping):
+    final List<String> locHierarchy = [];
+    if (locationData != null) {
+      if (locationData.country != null && locationData.country!.isNotEmpty) {
+        locHierarchy.add('Negara: ${locationData.country}');
+      }
+      if (locationData.province != null && locationData.province!.isNotEmpty) {
+        locHierarchy.add('Prov: ${locationData.province}');
+      }
+      if (locationData.regency != null && locationData.regency!.isNotEmpty) {
+        locHierarchy.add('Kab/Kota: ${locationData.regency}');
+      }
+      if (locationData.district != null && locationData.district!.isNotEmpty) {
+        locHierarchy.add('Kec: ${locationData.district}');
+      }
+      if (locationData.subDistrict != null && locationData.subDistrict!.isNotEmpty) {
+        locHierarchy.add('Desa/Kel: ${locationData.subDistrict}');
+      }
+      if (locationData.street != null && locationData.street!.isNotEmpty) {
+        locHierarchy.add('Jln/Blok: ${locationData.street}');
+      }
+    }
+
+    String detailedLocationStr = '';
+    if (locHierarchy.isNotEmpty) {
+      if (locHierarchy.length <= 3) {
+        detailedLocationStr = locHierarchy.join('  |  ');
+      } else {
+        final row1 = locHierarchy.sublist(0, 3).join('  |  ');
+        final row2 = locHierarchy.sublist(3).join('  |  ');
+        detailedLocationStr = '$row1\n$row2';
+      }
+    } else {
+      detailedLocationStr = locationData?.address ?? 'Lokasi GPS tidak tersedia';
+    }
 
     // 10. Paint text elements on canvas
     final double paddingX = cardX + accentWidth + (cardWidth * 0.025);
-    double currentY = cardY + (cardHeight * 0.10);
+    double currentY = cardY + (cardHeight * 0.08);
 
     // Row 1: Time (Jam) & Date (Tanggal)
     final TextPainter timePainter = TextPainter(
@@ -97,7 +132,7 @@ class WatermarkService {
             text: '$timeStr  ',
             style: TextStyle(
               color: const Color(0xFF00D4FF),
-              fontSize: cardHeight * 0.22,
+              fontSize: cardHeight * 0.18,
               fontWeight: FontWeight.bold,
               letterSpacing: 1.1,
             ),
@@ -106,7 +141,7 @@ class WatermarkService {
             text: '|  $dateStr',
             style: TextStyle(
               color: Colors.white,
-              fontSize: cardHeight * 0.16,
+              fontSize: cardHeight * 0.13,
               fontWeight: FontWeight.w500,
             ),
           ),
@@ -117,7 +152,7 @@ class WatermarkService {
     timePainter.layout(maxWidth: cardWidth * 0.9);
     timePainter.paint(canvas, Offset(paddingX, currentY));
 
-    currentY += timePainter.height + (cardHeight * 0.05);
+    currentY += timePainter.height + (cardHeight * 0.03);
 
     // Row 2: GPS Coordinates (Latitude & Longitude)
     final TextPainter gpsPainter = TextPainter(
@@ -125,7 +160,7 @@ class WatermarkService {
         text: '$latStr   $lngStr',
         style: TextStyle(
           color: const Color(0xFFA78BFA),
-          fontSize: cardHeight * 0.16,
+          fontSize: cardHeight * 0.13,
           fontWeight: FontWeight.w600,
           fontFamily: 'monospace',
         ),
@@ -135,25 +170,25 @@ class WatermarkService {
     gpsPainter.layout(maxWidth: cardWidth * 0.9);
     gpsPainter.paint(canvas, Offset(paddingX, currentY));
 
-    currentY += gpsPainter.height + (cardHeight * 0.05);
+    currentY += gpsPainter.height + (cardHeight * 0.03);
 
-    // Row 3: Reverse-Geocoded Address (Alamat)
-    final TextPainter addressPainter = TextPainter(
+    // Row 3: Detailed Location (Disusun menyamping: 3 item per baris)
+    final TextPainter locationPainter = TextPainter(
       text: TextSpan(
-        text: addressStr,
+        text: detailedLocationStr,
         style: TextStyle(
-          color: const Color(0xFFE2E8F0),
-          fontSize: cardHeight * 0.13,
-          fontWeight: FontWeight.w400,
+          color: const Color(0xFF34D399),
+          fontSize: cardHeight * 0.11,
+          fontWeight: FontWeight.w500,
           height: 1.25,
         ),
       ),
       textDirection: ui.TextDirection.ltr,
-      maxLines: 2,
+      maxLines: 3,
       ellipsis: '...',
     );
-    addressPainter.layout(maxWidth: cardWidth * 0.72);
-    addressPainter.paint(canvas, Offset(paddingX, currentY));
+    locationPainter.layout(maxWidth: cardWidth * 0.72);
+    locationPainter.paint(canvas, Offset(paddingX, currentY));
 
     // Bottom Right App Branding: "GeoGPS Cam"
     final TextPainter brandPainter = TextPainter(
