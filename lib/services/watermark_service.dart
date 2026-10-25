@@ -2,14 +2,34 @@ import 'dart:io';
 import 'dart:typed_data';
 import 'dart:ui' as ui;
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:geo_gps_cam/models/location_data.dart';
+import 'package:image/image.dart' as img;
 import 'package:intl/intl.dart';
 import 'package:intl/date_symbol_data_local.dart';
 
+/// Top-level worker to encode raw RGBA pixels to JPEG in a background isolate.
+/// Keeps UI thread running at 60/120 FPS and reduces image size from ~25MB (PNG) to ~2MB (JPEG).
+Uint8List _encodeJpgWorker(Map<String, dynamic> params) {
+  final int width = params['width'] as int;
+  final int height = params['height'] as int;
+  final Uint8List rawRgba = params['rawRgba'] as Uint8List;
+  final int quality = params['quality'] as int;
+
+  final img.Image image = img.Image.fromBytes(
+    width: width,
+    height: height,
+    bytes: rawRgba.buffer,
+    order: img.ChannelOrder.rgba,
+  );
+
+  return img.encodeJpg(image, quality: quality);
+}
+
 class WatermarkService {
   /// Adds a professional, high-resolution GPS watermark panel directly onto the image.
-  /// Returns the processed watermarked image as Uint8List PNG/JPEG bytes.
+  /// Returns the processed watermarked image as Uint8List JPEG bytes.
   static Future<Uint8List> addWatermark({
     required String imagePath,
     required LocationDataModel? locationData,
@@ -27,8 +47,10 @@ class WatermarkService {
     final ui.FrameInfo frameInfo = await codec.getNextFrame();
     final ui.Image originalImage = frameInfo.image;
 
-    final double imgWidth = originalImage.width.toDouble();
-    final double imgHeight = originalImage.height.toDouble();
+    final int imgWidthInt = originalImage.width;
+    final int imgHeightInt = originalImage.height;
+    final double imgWidth = imgWidthInt.toDouble();
+    final double imgHeight = imgHeightInt.toDouble();
 
     // 3. Setup canvas at native photo resolution
     final ui.PictureRecorder recorder = ui.PictureRecorder();
@@ -212,19 +234,34 @@ class WatermarkService {
       ),
     );
 
-    // 11. Export canvas to high quality Image byte data
+    // 11. Export canvas to raw RGBA byte data (instant, no CPU freeze on main thread)
     final ui.Image watermarkedImage = await recorder
         .endRecording()
-        .toImage(originalImage.width, originalImage.height);
+        .toImage(imgWidthInt, imgHeightInt);
 
     final ByteData? byteData = await watermarkedImage.toByteData(
-      format: ui.ImageByteFormat.png,
+      format: ui.ImageByteFormat.rawRgba,
     );
+
+    // Dispose native textures immediately to free GPU memory
+    originalImage.dispose();
+    watermarkedImage.dispose();
 
     if (byteData == null) {
       throw Exception('Gagal memproses watermark pada gambar');
     }
 
-    return byteData.buffer.asUint8List();
+    final Uint8List rawRgbaBytes = byteData.buffer.asUint8List(
+      byteData.offsetInBytes,
+      byteData.lengthInBytes,
+    );
+
+    // 12. Encode to high-quality JPEG (88% quality) in background isolate
+    return await compute(_encodeJpgWorker, {
+      'width': imgWidthInt,
+      'height': imgHeightInt,
+      'rawRgba': rawRgbaBytes,
+      'quality': 88,
+    });
   }
 }

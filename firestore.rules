@@ -1,0 +1,22 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Koleksi akun bebas iklan (ad_free_users)
+    // Document ID berupa email lowercase (contoh: user@gmail.com)
+    match /ad_free_users/{email} {
+      // User hanya dapat membaca status bebas iklan milik email mereka sendiri
+      allow read: if request.auth != null && request.auth.token.email.lower() == email.lower();
+      
+      // Sangat penting: User BIASA dilarang menulis atau mengubah status menjadi true!
+      // Hanya dapat diubah melalui Firebase Console atau Admin SDK
+      allow write: if false;
+    }
+
+    // Default: Tolak semua akses ke dokumen lain yang tidak didefinisikan
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

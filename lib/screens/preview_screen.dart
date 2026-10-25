@@ -4,6 +4,8 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:geo_gps_cam/models/location_data.dart';
 import 'package:geo_gps_cam/services/watermark_service.dart';
+import 'package:geo_gps_cam/services/ad_service.dart';
+import 'package:geo_gps_cam/widgets/banner_ad_widget.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:gal/gal.dart';
@@ -34,6 +36,8 @@ class _PreviewScreenState extends State<PreviewScreen>
   Uint8List? _watermarkedBytes;
   bool _isProcessing = true;
 
+  final AdService _adService = AdService();
+
   @override
   void initState() {
     super.initState();
@@ -47,6 +51,10 @@ class _PreviewScreenState extends State<PreviewScreen>
     ).animate(CurvedAnimation(parent: _slideController, curve: Curves.easeOut));
     _slideController.forward();
     _processWatermark();
+    if (_adService.shouldShowAds) {
+      _adService.loadInterstitialAd();
+      _adService.loadRewardedAd();
+    }
   }
 
   Future<void> _processWatermark() async {
@@ -71,6 +79,16 @@ class _PreviewScreenState extends State<PreviewScreen>
 
   Future<void> _saveToGallery() async {
     if (_isSaving) return;
+    if (_isProcessing) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Sedang menyiapkan watermark, mohon tunggu sebentar...'),
+          duration: Duration(seconds: 1),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
     setState(() => _isSaving = true);
 
     try {
@@ -89,7 +107,7 @@ class _PreviewScreenState extends State<PreviewScreen>
 
       final dir = await getTemporaryDirectory();
       final fileName =
-          'GeoGPS_${DateFormat('yyyyMMdd_HHmmss').format(widget.captureTime)}.png';
+          'GeoGPS_${DateFormat('yyyyMMdd_HHmmss').format(widget.captureTime)}.jpg';
       final file = File('${dir.path}/$fileName');
       await file.writeAsBytes(_watermarkedBytes!);
 
@@ -106,9 +124,11 @@ class _PreviewScreenState extends State<PreviewScreen>
           SnackBar(
             content: const Row(
               children: [
-                Icon(Icons.check_circle, color: Colors.white),
-                SizedBox(width: 8),
-                Text('Foto berhasil disimpan ke Galeri!'),
+                Icon(Icons.check_circle, color: Colors.white, size: 20),
+                SizedBox(width: 10),
+                Expanded(
+                  child: Text('Foto berhasil disimpan ke Galeri!'),
+                ),
               ],
             ),
             backgroundColor: const Color(0xFF00C853),
@@ -118,6 +138,13 @@ class _PreviewScreenState extends State<PreviewScreen>
             ),
           ),
         );
+
+        // Show interstitial ad after saving (for non-ad-free users)
+        if (_adService.shouldShowAds) {
+          // Small delay before showing interstitial
+          await Future.delayed(const Duration(milliseconds: 800));
+          await _adService.showInterstitialAd();
+        }
       }
     } on GalException catch (e) {
       if (mounted) {
@@ -139,6 +166,56 @@ class _PreviewScreenState extends State<PreviewScreen>
           ),
         );
       }
+    }
+  }
+
+  Future<void> _showRewardedAd() async {
+    final shown = await _adService.showRewardedAd(
+      onRewarded: () {
+        if (mounted) {
+          setState(() {});
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Row(
+                children: [
+                  const Icon(Icons.card_giftcard_rounded, color: Colors.white, size: 20),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      'Selamat! Bebas iklan selama 30 menit 🎉',
+                      style: GoogleFonts.inter(
+                        fontWeight: FontWeight.w500,
+                        fontSize: 13,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              backgroundColor: const Color(0xFF34D399),
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+          );
+        }
+      },
+    );
+
+    if (!shown && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Iklan belum tersedia. Coba lagi nanti.',
+            style: GoogleFonts.inter(fontWeight: FontWeight.w500),
+          ),
+          backgroundColor: Colors.orange,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+      );
     }
   }
 
@@ -251,7 +328,7 @@ class _PreviewScreenState extends State<PreviewScreen>
 
           // Bottom action bar (pinned to bottom)
           Positioned(
-            bottom: 0,
+            bottom: _adService.shouldShowAds ? 50 : 0,
             left: 0,
             right: 0,
             child: SlideTransition(
@@ -282,6 +359,49 @@ class _PreviewScreenState extends State<PreviewScreen>
                       const SizedBox(height: 14),
                       const Divider(color: Colors.white12, height: 1),
                       const SizedBox(height: 14),
+
+                      // Rewarded ad button (for non-ad-free users)
+                      if (_adService.shouldShowAds && _adService.isRewardedReady) ...[
+                        GestureDetector(
+                          onTap: _showRewardedAd,
+                          child: Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+                            margin: const EdgeInsets.only(bottom: 10),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFFFD700).withValues(alpha: 0.15),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: const Color(0xFFFFD700).withValues(alpha: 0.3),
+                              ),
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                const Icon(
+                                  Icons.card_giftcard_rounded,
+                                  color: Color(0xFFFFD700),
+                                  size: 18,
+                                ),
+                                const SizedBox(width: 8),
+                                Flexible(
+                                  child: Text(
+                                    'Tonton iklan untuk bebas iklan 30 menit',
+                                    style: GoogleFonts.inter(
+                                      color: const Color(0xFFFFD700),
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+
                       Row(
                         children: [
                           Expanded(
@@ -317,6 +437,15 @@ class _PreviewScreenState extends State<PreviewScreen>
               ),
             ),
           ),
+
+          // Banner Ad at the very bottom
+          if (_adService.shouldShowAds)
+            const Positioned(
+              bottom: 0,
+              left: 0,
+              right: 0,
+              child: BannerAdWidget(),
+            ),
         ],
       ),
     );
