@@ -1,14 +1,33 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
-    <!-- Camera -->
+    <!-- Camera: required=false agar kompatibel dengan seluruh Fire Tablets -->
     <uses-permission android:name="android.permission.CAMERA"/>
-    <uses-feature android:name="android.hardware.camera" android:required="true"/>
+    <uses-feature android:name="android.hardware.camera" android:required="false"/>
+    <uses-feature android:name="android.hardware.camera.any" android:required="false"/>
     <uses-feature android:name="android.hardware.camera.autofocus" android:required="false"/>
+    <uses-feature android:name="android.hardware.camera.flash" android:required="false"/>
+    <uses-feature android:name="android.hardware.camera.front" android:required="false"/>
 
-    <!-- Location -->
+    <!-- Location: Fire Tablets umumnya tidak memiliki modul chip GPS hardware (hanya Wi-Fi),
+         wajib diset required=false agar tidak memblokir 40 model Fire Tablets -->
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
+    <uses-feature android:name="android.hardware.location" android:required="false"/>
+    <uses-feature android:name="android.hardware.location.gps" android:required="false"/>
+    <uses-feature android:name="android.hardware.location.network" android:required="false"/>
+
+    <!-- Hardware tambahan yang sering tidak ada di tablet -->
+    <uses-feature android:name="android.hardware.telephony" android:required="false"/>
+    <uses-feature android:name="android.hardware.wifi" android:required="false"/>
+
+    <!-- Dukungan semua ukuran layar Fire Tablets (7", 8", 10", 11") -->
+    <supports-screens
+        android:smallScreens="true"
+        android:normalScreens="true"
+        android:largeScreens="true"
+        android:xlargeScreens="true"
+        android:anyDensity="true" />
 
     <!-- Storage (for saving to gallery) -->
     <!-- tools:replace resolves conflict with camera_android_camerax which declares maxSdkVersion=28 -->
