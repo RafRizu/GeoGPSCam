@@ -22,6 +22,12 @@
 -dontwarn com.google.firebase.**
 -keep class com.google.firebase.** { *; }
 
+# Google Sign-In & Play Services
+-keep class com.google.android.gms.auth.api.signin.** { *; }
+-keep class com.google.android.gms.common.api.** { *; }
+-keep class com.google.android.gms.common.internal.** { *; }
+-dontwarn com.google.android.gms.**
+
 # Keep models and serialized classes
 -keepclassmembers class * {
     @com.google.gson.annotations.SerializedName <fields>;

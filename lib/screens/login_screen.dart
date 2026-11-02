@@ -75,9 +75,17 @@ class _LoginScreenState extends State<LoginScreen>
         });
       }
     } catch (e) {
+      debugPrint('Error signing in: $e');
       setState(() {
         _isLoading = false;
-        _errorMessage = 'Terjadi kesalahan. Periksa koneksi internet Anda.';
+        final err = e.toString();
+        if (err.contains('ApiException: 10') || err.contains('DEVELOPER_ERROR')) {
+          _errorMessage = 'Konfigurasi Firebase belum lengkap (SHA-1 fingerprint belum terdaftar di Firebase Console).';
+        } else if (err.contains('network') || err.contains('koneksi')) {
+          _errorMessage = 'Periksa koneksi internet Anda dan coba lagi.';
+        } else {
+          _errorMessage = 'Gagal login: $err';
+        }
       });
     }
   }
